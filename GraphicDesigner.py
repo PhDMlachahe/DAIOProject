@@ -67,11 +67,6 @@ class Drawing():
     def __init__(self, fallstate=False):
         self.fallstate = fallstate
 
-    # Prendre l'état du point
-    def get_KF_state(self, position, vitesse):
-        self.vx, self.vy = vitesse[0], vitesse[1]
-        self.x, self.y = position[0], position[1]
-
     # Dessiner des axes x et y sur l'image
     def axes(self, img):
         cv2.arrowedLine(img, (5, 5), (5, img.shape[0] - 5), color=(255, 255, 255), thickness=1, tipLength=0.01)
@@ -80,33 +75,35 @@ class Drawing():
         cv2.putText(img, 'x', (img.shape[1] - 15, 20), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
 
     # Dessiner l'état du point : vitesse
-    def draw_KF_state(self, img, legend=False):
+    def draw_KF_state(self, img, position, vitesse, legend=False):
 
         # Pointer le point
-        cv2.circle(img, (self.x, self.y), 2, (0, 255, 0), 5)
-        cv2.circle(img, (self.x, self.y), 10, (0, 0, 255), 2)
+        cv2.circle(img, position, 2, (0, 255, 0), 4)
 
         # Norme de la vitesse du point
-        norme_v = math.sqrt(self.vx ** 2 + self.vy ** 2)
+        norme = lambda p: math.sqrt(p[0] ** 2 + p[1] ** 2)
 
-        # Tracer un flèche entre du point (x,y) jusqu'au point (x+vx,y+vy)
+        # Tracer une flèche pour l'accélération
         cv2.arrowedLine(img,
-                        (self.x, self.y), (self.x + self.vx, self.y + self.vy),
-                        color=(0, 255, 0), thickness=3, tipLength=0.2)
-        cv2.putText(img, f'V = {round(norme_v, 1)}', (self.x + self.vx + 20, self.y + self.vy),
-                    cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0), 1)
+                        position,
+                        (position[0] + vitesse[0], position[1] + vitesse[1]),
+                        color=(0, 255, 0), thickness=2, tipLength=0.2)
 
+        # Ajouter une légende
         if legend:
-            cv2.putText(img, f'(x, y) : ({self.x}, {self.y})', (20, 30), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0), 1)
-            cv2.putText(img, f'(vx, vy) : ({self.vx}, {self.vy})', (20, 50), cv2.FONT_HERSHEY_PLAIN, 1,
-                        (0, 255, 0), 1)
+            cv2.putText(img, f'a = {round(norme(vitesse), 1)}',
+                        (position[0] + vitesse[0] + 20, position[1] + vitesse[1]),
+                        cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0), 1)
+
 
 
     # Visualiser les positions des points de squelette et les seuils, pour l'analyse de détection de chute via la position
-    def draw_PersonFallingDown_threshold(self, img, lmHead, lmShoulderCenter, lmHipCenter, lmAnkleLeft, lmAnkleRight,
+    def draw_PersonFallingDown_position_threshold(self, img, lmHead, lmShoulderCenter, lmHipCenter, lmAnkleLeft, lmAnkleRight,
                                          Head_Ankle1, Head_Ankle2, thr, seuil,couleur_seuil_position=(0,100,255), couleur_seuil_position_thr=(50,50,255)):
 
+        # légender les points d'interêts
         legend = Legend(img)
+
         legend.semi_vline_following_point("yHead", lmHead, left_right=1)
         legend.semi_vline_following_point("yShoulderCenter", lmShoulderCenter, left_right=0)
         legend.semi_vline_following_point("yHipCenter", lmHipCenter, left_right=0)
@@ -130,7 +127,7 @@ class Drawing():
         return barre_infos
 
     # Visualiser l'évolution d'une variable au cours du temps : visualiser son historique
-    def graph_temporelle(self, largeur, hauteur, nom_variable, variable, texte_seuil, seuil, historique, coef=5, negatifvaluemode=1, couleur_seuil=(0,0,255),couleur_fond=(0,0,0)):
+    def graph_temporelle(self, largeur, hauteur, nom_variable, variable, texte_seuil, seuil, historique, coef=5, addseuil=True, negatifvaluemode=1, couleur_seuil=(0,0,255),couleur_fond=(0,0,0)):
         # Historique
         historique = np.roll(historique, 1)
         historique[0] = int(variable / coef)
@@ -141,9 +138,7 @@ class Drawing():
 
         # Pour chaque valeur dans l'historique
         for i in range(historique.shape[0]):
-            couleur = (0, 0, 255) if historique[i] > ligne_seuil else (0, 255, 0)
-            if negatifvaluemode==2:
-                couleur = (0, 255, 0) if historique[i] > ligne_seuil else (0, 0, 255)
+            couleur = (0, 0, 255) if historique[i] > ligne_seuil and addseuil else (0, 255, 0)
 
             # Mode affichage des valeurs positives et négatives
             if negatifvaluemode:
@@ -161,9 +156,10 @@ class Drawing():
             # Tracer la barre horizontale
             cv2.line(graph_temporelle, barre_point_depart, barre_point_arrivee, couleur,1)
 
-        # Tracer la barre vertical du seuil
-        cv2.line(graph_temporelle, ligne_seuil_point_depart, ligne_seuil_point_arrivee, couleur_seuil, 1)
-        cv2.putText(graph_temporelle, texte_seuil, (ligne_seuil_point_arrivee[0]-100, ligne_seuil_point_arrivee[1]-1), cv2.FONT_HERSHEY_PLAIN, 0.75, couleur_seuil, 1)
+        if addseuil:
+            # Tracer la barre horizontal du seuil
+            cv2.line(graph_temporelle, ligne_seuil_point_depart, ligne_seuil_point_arrivee, couleur_seuil, 1)
+            cv2.putText(graph_temporelle, texte_seuil, (ligne_seuil_point_arrivee[0]-100, ligne_seuil_point_arrivee[1]-1), cv2.FONT_HERSHEY_PLAIN, 0.75, couleur_seuil, 1)
 
         # Dessiner les axes
         cv2.arrowedLine(graph_temporelle, (5, graph_temporelle.shape[0] - 1), (5,5) , color=(255, 255, 255), thickness=1, tipLength=0.05)

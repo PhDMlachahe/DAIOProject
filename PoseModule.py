@@ -33,7 +33,7 @@ class PoseDetector():
                 self.mpDraw.draw_landmarks(img, self.results.pose_landmarks, self.mpPose.POSE_CONNECTIONS)
         return img
 
-    def findPosition(self, img, draw=True, couleur=(0, 0, 0)):
+    def findPosition(self, img, draw=True, couleur=(255, 0, 0)):
         self.lmList = []
         if self.results.pose_landmarks:
             for id, lm in enumerate(self.results.pose_landmarks.landmark):
@@ -110,13 +110,34 @@ class PoseDetector():
             cv2.putText(img, str(int(distance)), ((x1+x2)//2, (y1+y2)//2), cv2.FONT_HERSHEY_PLAIN, 2, couleur, 2)
         return distance
 
+    # 
+    def drawLm(self, img, ptList='all pts', ptsOfInterest=False, couleur=(255, 0, 0), size=5):
 
-    def DrawLm(self, img, lmList, couleur=(255,0,0)):
-        #if self.results.pose_landmarks:
-        #    self.mpDraw.draw_landmarks(img, self.results.pose_landmarks, self.mpPose.POSE_CONNECTIONS)
-        for lm in lmList:
-            cx, cy = lm[1], lm[2]
-            cv2.circle(img, (cx, cy), 5, couleur, cv2.FILLED)
+        if len(self.lmList)!=0:
+
+            if ptList!="all pts":
+                # pointer les points de la liste
+                 for p in ptList:
+                    x, y = self.lmList[p][1:]
+                    cv2.circle(img, (x, y), size, couleur, cv2.FILLED)
+            else:
+                # pointer tous les points
+                for p in range(len(self.lmList)):
+                    x, y = self.lmList[p][1:]
+                    cv2.circle(img, (x, y), size, couleur, cv2.FILLED)
+
+            # pointer les points d'interêt
+            if ptsOfInterest:
+                size_pts_interest = size + 2
+                couleur_pts_interest = (0, 255, 255)
+                for p in [0, 27, 28]:
+                    x, y = self.lmList[p][1:]
+                    cv2.circle(img, (x, y), size_pts_interest, couleur_pts_interest, 1)
+                x, y = self.findCenter(img, 11, 12, draw=False)
+                cv2.circle(img, (x, y), size_pts_interest, couleur_pts_interest, 1)
+                x, y = self.findCenter(img, 23, 24, draw=False)
+                cv2.circle(img, (x, y), size_pts_interest, couleur_pts_interest, 1)
+
         return img
 
 def main():
@@ -125,9 +146,10 @@ def main():
     detector = PoseDetector()
     while True:
         success, img = cap.read()
-        #img = cv2.resize(img, (int(img.shape[1]*0.75), int(img.shape[0]*0.75)), interpolation=cv2.INTER_AREA)
-        img = detector.findPose(img)
-        lmList = detector.findPosition(img)
+        #img = cv2.resize(img, (int(img.shape[1]*0.50), int(img.shape[0]*0.50)), interpolation=cv2.INTER_AREA)
+        img = detector.findPose(img, draw=False)
+        lmList = detector.findPosition(img, draw=False)
+        detector.drawLm(img, ptList=[0,11,13], size=10)
 
         if len(lmList)!=0:
             print(lmList)
@@ -139,7 +161,7 @@ def main():
         cv2.putText(img, f'FPS : {int(fps)}', (20, 20), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0), 2)
 
         cv2.imshow("Mediapipe Pose", img)
-        if cv2.waitKey(50) & 0xFF == ord('q'):
+        if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
 
