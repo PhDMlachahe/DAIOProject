@@ -16,8 +16,8 @@ To detect a fall, we set up a video surveillance pipeline with three key steps :
 3. **Recognition** of the fall according to the position and acceleration thresholds reached by these points.
 
 For more information, you can read my Medium article on the subject :
-- 🇫🇷 [📰 Détection de chute à partir des points du squelette en 2D](https://medium.com/wanabilini/daïo-le-tableau-connecté-1-2-abd4cf38843c)
-- 🇬🇧 [📰 Détection de chute à partir des points du squelette en 2D](https://medium.com/wanabilini/daïo-le-tableau-connecté-1-2-abd4cf38843c)
+- 🇫🇷 [📰 Détection de chute à partir des points du squelette en 2D](https://medium.com/wanabilini/détection-de-chute-à-partir-des-points-du-squelette-en-2d-6cfaa1a7fd72)
+- 🇬🇧 [📰 Fall detection from 2D skeleton points](https://medium.com/wanabilini/détection-de-chute-à-partir-des-points-du-squelette-en-2d-6cfaa1a7fd72)
 
 
 ## Execution
